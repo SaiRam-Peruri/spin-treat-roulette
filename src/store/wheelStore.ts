@@ -41,7 +41,7 @@ export interface WheelActions {
   resetWheel: () => void;
   
   // Restaurant wheel actions
-  setRestaurantSegments: (segments: RestaurantWheelSegment[]) => void;
+  setRestaurantSegments: (restaurants: Restaurant[]) => void;
   setRestaurantSpinning: (spinning: boolean) => void;
   setRestaurantWinner: (winner: RestaurantWheelSegment | null) => void;
   setShowRestaurantWheel: (show: boolean) => void;
@@ -112,7 +112,7 @@ export const useWheelStore = create<WheelStore>((set, get) => ({
 
   // Restaurant wheel actions
   setRestaurantSegments: (restaurants) => {
-    const segments = restaurants.map((restaurant, index) => ({
+    const segments: RestaurantWheelSegment[] = restaurants.map((restaurant, index) => ({
       id: restaurant.id,
       restaurant,
       color: RESTAURANT_COLORS[index % RESTAURANT_COLORS.length],
