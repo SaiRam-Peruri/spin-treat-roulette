@@ -1,8 +1,17 @@
+
 import { create } from 'zustand';
+import { Restaurant } from './restaurantStore';
 
 export interface WheelSegment {
   id: string;
   cuisine: string;
+  color: string;
+  angle: number;
+}
+
+export interface RestaurantWheelSegment {
+  id: string;
+  restaurant: Restaurant;
   color: string;
   angle: number;
 }
@@ -14,6 +23,14 @@ export interface WheelState {
   spinHistory: WheelSegment[];
   spinDuration: number;
   finalRotation: number;
+  
+  // Restaurant wheel state
+  restaurantSegments: RestaurantWheelSegment[];
+  isRestaurantSpinning: boolean;
+  restaurantWinner: RestaurantWheelSegment | null;
+  showRestaurantWheel: boolean;
+  restaurantSpinDuration: number;
+  restaurantFinalRotation: number;
 }
 
 export interface WheelActions {
@@ -22,6 +39,14 @@ export interface WheelActions {
   addToHistory: (segment: WheelSegment) => void;
   setSpin: (duration: number, rotation: number) => void;
   resetWheel: () => void;
+  
+  // Restaurant wheel actions
+  setRestaurantSegments: (segments: RestaurantWheelSegment[]) => void;
+  setRestaurantSpinning: (spinning: boolean) => void;
+  setRestaurantWinner: (winner: RestaurantWheelSegment | null) => void;
+  setShowRestaurantWheel: (show: boolean) => void;
+  setRestaurantSpin: (duration: number, rotation: number) => void;
+  resetRestaurantWheel: () => void;
 }
 
 export type WheelStore = WheelState & WheelActions;
@@ -41,6 +66,11 @@ const DEFAULT_SEGMENTS: WheelSegment[] = [
   { id: '12', cuisine: 'Seafood', color: 'segment-12', angle: 330 },
 ];
 
+const RESTAURANT_COLORS = [
+  'segment-1', 'segment-2', 'segment-3', 'segment-4', 'segment-5', 'segment-6',
+  'segment-7', 'segment-8', 'segment-9', 'segment-10', 'segment-11', 'segment-12'
+];
+
 export const useWheelStore = create<WheelStore>((set, get) => ({
   segments: DEFAULT_SEGMENTS,
   isSpinning: false,
@@ -48,6 +78,14 @@ export const useWheelStore = create<WheelStore>((set, get) => ({
   spinHistory: [],
   spinDuration: 0,
   finalRotation: 0,
+  
+  // Restaurant wheel initial state
+  restaurantSegments: [],
+  isRestaurantSpinning: false,
+  restaurantWinner: null,
+  showRestaurantWheel: false,
+  restaurantSpinDuration: 0,
+  restaurantFinalRotation: 0,
 
   setSpinning: (spinning) => set({ isSpinning: spinning }),
 
@@ -66,6 +104,40 @@ export const useWheelStore = create<WheelStore>((set, get) => ({
     isSpinning: false,
     winner: null,
     spinDuration: 0,
-    finalRotation: 0
+    finalRotation: 0,
+    showRestaurantWheel: false,
+    restaurantWinner: null,
+    restaurantSegments: []
+  }),
+
+  // Restaurant wheel actions
+  setRestaurantSegments: (restaurants) => {
+    const segments = restaurants.map((restaurant, index) => ({
+      id: restaurant.id,
+      restaurant,
+      color: RESTAURANT_COLORS[index % RESTAURANT_COLORS.length],
+      angle: (360 / restaurants.length) * index
+    }));
+    set({ restaurantSegments: segments });
+  },
+
+  setRestaurantSpinning: (spinning) => set({ isRestaurantSpinning: spinning }),
+
+  setRestaurantWinner: (winner) => set({ restaurantWinner: winner }),
+
+  setShowRestaurantWheel: (show) => set({ showRestaurantWheel: show }),
+
+  setRestaurantSpin: (duration, rotation) => set({ 
+    restaurantSpinDuration: duration, 
+    restaurantFinalRotation: rotation 
+  }),
+
+  resetRestaurantWheel: () => set({
+    isRestaurantSpinning: false,
+    restaurantWinner: null,
+    restaurantSpinDuration: 0,
+    restaurantFinalRotation: 0,
+    showRestaurantWheel: false,
+    restaurantSegments: []
   })
 }));

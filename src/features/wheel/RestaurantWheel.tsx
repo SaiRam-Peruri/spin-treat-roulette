@@ -3,31 +3,25 @@ import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { Button } from '@/components/ui/button';
-import { Sparkles, RotateCcw, ArrowRight } from 'lucide-react';
+import { Sparkles, RotateCcw, MapPin, Phone, ExternalLink } from 'lucide-react';
 import { useWheelStore } from '@/store/wheelStore';
-import { useLocationStore } from '@/store/locationStore';
-import { useRestaurantStore } from '@/store/restaurantStore';
 import { cn } from '@/lib/utils';
 
-export const Wheel: React.FC = () => {
+export const RestaurantWheel: React.FC = () => {
   const [rotation, setRotation] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   
   const { 
-    segments, 
-    isSpinning, 
-    winner,
-    setSpinning, 
-    setWinner, 
-    addToHistory,
-    setSpin,
-    resetWheel
+    restaurantSegments, 
+    isRestaurantSpinning, 
+    restaurantWinner,
+    setRestaurantSpinning, 
+    setRestaurantWinner, 
+    setRestaurantSpin,
+    resetRestaurantWheel
   } = useWheelStore();
-  
-  const { coordinates, city, requestLocation } = useLocationStore();
-  const { fetchRestaurants, setSelectedCuisine, restaurants } = useRestaurantStore();
 
-  const segmentAngle = 360 / segments.length;
+  const segmentAngle = restaurantSegments.length > 0 ? 360 / restaurantSegments.length : 0;
 
   const triggerConfetti = useCallback(() => {
     const count = 50;
@@ -54,47 +48,23 @@ export const Wheel: React.FC = () => {
       spread: 60,
       colors: ['#FFD700', '#FF69B4', '#00CED1'],
     });
-
-    fire(0.35, {
-      spread: 100,
-      decay: 0.91,
-      scalar: 0.8,
-      colors: ['#FF6347', '#9370DB', '#FFD700'],
-    });
-
-    fire(0.1, {
-      spread: 120,
-      startVelocity: 25,
-      decay: 0.92,
-      scalar: 1.2,
-      colors: ['#00CED1', '#FF69B4'],
-    });
-
-    fire(0.1, {
-      spread: 120,
-      startVelocity: 45,
-      colors: ['#FFD700', '#9370DB'],
-    });
   }, []);
 
-  const getWinningSegment = useCallback((finalRotation: number): typeof segments[0] => {
+  const getWinningSegment = useCallback((finalRotation: number) => {
     const normalizedRotation = ((finalRotation % 360) + 360) % 360;
     const pointerAngle = (360 - normalizedRotation) % 360;
-    const segmentIndex = Math.floor(pointerAngle / segmentAngle) % segments.length;
-    return segments[segmentIndex];
-  }, [segments, segmentAngle]);
+    const segmentIndex = Math.floor(pointerAngle / segmentAngle) % restaurantSegments.length;
+    return restaurantSegments[segmentIndex];
+  }, [restaurantSegments, segmentAngle]);
 
-  const spinWheel = useCallback(async () => {
-    if (isSpinning || isAnimating) return;
-
-    if (!coordinates && !city) {
-      await requestLocation();
-    }
+  const spinWheel = useCallback(() => {
+    if (isRestaurantSpinning || isAnimating || restaurantSegments.length === 0) return;
 
     setIsAnimating(true);
-    setSpinning(true);
-    setWinner(null);
+    setRestaurantSpinning(true);
+    setRestaurantWinner(null);
 
+    // Generate random spin parameters
     const minSpins = 4;
     const maxSpins = 8;
     const spins = minSpins + Math.random() * (maxSpins - minSpins);
@@ -103,47 +73,38 @@ export const Wheel: React.FC = () => {
     
     const duration = 4000 + (spins - minSpins) * 1000;
     const finalRotation = rotation + totalRotation;
-    setSpin(duration, finalRotation);
+    setRestaurantSpin(duration, finalRotation);
 
     setRotation(finalRotation);
 
     setTimeout(() => {
       const winningSegment = getWinningSegment(finalRotation);
-      setWinner(winningSegment);
-      addToHistory(winningSegment);
-      setSelectedCuisine(winningSegment.cuisine);
-      
+      setRestaurantWinner(winningSegment);
       triggerConfetti();
-      
-      const location = coordinates || { city: city || 'New York' };
-      fetchRestaurants(winningSegment.cuisine, location);
-      
-      setSpinning(false);
+      setRestaurantSpinning(false);
       setIsAnimating(false);
     }, duration);
   }, [
-    isSpinning, 
+    isRestaurantSpinning, 
     isAnimating, 
     rotation, 
-    coordinates, 
-    city, 
-    requestLocation,
-    setSpinning, 
-    setWinner, 
-    addToHistory, 
-    setSpin,
-    setSelectedCuisine,
-    fetchRestaurants,
+    restaurantSegments,
+    setRestaurantSpinning, 
+    setRestaurantWinner, 
+    setRestaurantSpin,
     getWinningSegment,
     triggerConfetti
   ]);
 
   const resetAndSpin = useCallback(() => {
-    resetWheel();
     setRotation(0);
     setIsAnimating(false);
     setTimeout(() => spinWheel(), 100);
-  }, [resetWheel, spinWheel]);
+  }, [spinWheel]);
+
+  if (restaurantSegments.length === 0) {
+    return null;
+  }
 
   return (
     <div className="flex flex-col items-center justify-center space-y-8 p-8">
@@ -164,8 +125,8 @@ export const Wheel: React.FC = () => {
             viewBox="0 0 320 320"
             className="drop-shadow-2xl"
           >
-            {segments.map((segment, index) => {
-              const segmentAngle = 360 / segments.length;
+            {restaurantSegments.map((segment, index) => {
+              const segmentAngle = 360 / restaurantSegments.length;
               const rotation = index * segmentAngle;
               const startAngle = rotation;
               const endAngle = startAngle + segmentAngle;
@@ -192,7 +153,7 @@ export const Wheel: React.FC = () => {
 
               const textAngle = startAngle + segmentAngle / 2;
               const textRad = (textAngle * Math.PI) / 180;
-              const textRadius = 100;
+              const textRadius = 90;
               const textX = centerX + textRadius * Math.cos(textRad);
               const textY = centerY + textRadius * Math.sin(textRad);
 
@@ -200,23 +161,26 @@ export const Wheel: React.FC = () => {
                 <g key={segment.id}>
                   <motion.path
                     d={pathData}
-                    fill={`hsl(var(--segment-${index + 1}))`}
+                    fill={`hsl(var(--${segment.color}))`}
                     stroke="rgba(255, 255, 255, 0.3)"
                     strokeWidth="2"
-                    animate={winner?.id === segment.id ? {
+                    animate={restaurantWinner?.id === segment.id ? {
                       filter: ['brightness(1)', 'brightness(1.4)', 'brightness(1)']
                     } : {}}
-                    transition={{ duration: 0.5, repeat: winner?.id === segment.id ? 3 : 0 }}
+                    transition={{ duration: 0.5, repeat: restaurantWinner?.id === segment.id ? 3 : 0 }}
                   />
                   <text
                     x={textX}
                     y={textY}
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    className="text-sm font-bold fill-white drop-shadow-lg pointer-events-none select-none"
+                    className="text-xs font-bold fill-white drop-shadow-lg pointer-events-none select-none"
                     transform={`rotate(${textAngle} ${textX} ${textY})`}
                   >
-                    {segment.cuisine}
+                    {segment.restaurant.name.length > 12 
+                      ? segment.restaurant.name.substring(0, 12) + '...'
+                      : segment.restaurant.name
+                    }
                   </text>
                 </g>
               );
@@ -243,34 +207,11 @@ export const Wheel: React.FC = () => {
           <div className="w-0 h-0 border-l-4 border-r-4 border-b-8 border-l-transparent border-r-transparent border-b-primary drop-shadow-lg" />
           <div className="w-3 h-3 bg-primary rounded-full -mt-1 mx-auto shadow-lg" />
         </div>
-
-        {/* Floating Particles */}
-        <div className="absolute inset-0 pointer-events-none">
-          {[...Array(6)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-2 h-2 bg-accent rounded-full opacity-30"
-              style={{
-                left: `${20 + Math.random() * 60}%`,
-                top: `${20 + Math.random() * 60}%`,
-              }}
-              animate={{
-                y: [-10, 10, -10],
-                opacity: [0.3, 0.7, 0.3],
-              }}
-              transition={{
-                duration: 3 + Math.random() * 2,
-                repeat: Infinity,
-                delay: Math.random() * 2,
-              }}
-            />
-          ))}
-        </div>
       </div>
 
       {/* Winner Banner */}
       <AnimatePresence>
-        {winner && !isSpinning && restaurants.length > 0 && (
+        {restaurantWinner && !isRestaurantSpinning && (
           <motion.div
             initial={{ scale: 0, opacity: 0, y: 50 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -281,18 +222,51 @@ export const Wheel: React.FC = () => {
               damping: 30,
               delay: 0.2 
             }}
-            className="text-center space-y-2"
+            className="text-center space-y-4 max-w-md"
           >
             <div className="text-6xl">🎉</div>
-            <h2 className="text-4xl font-bold gradient-text animate-bounce-in">
-              {winner.cuisine}!
+            <h2 className="text-3xl font-bold gradient-text">
+              {restaurantWinner.restaurant.name}!
             </h2>
-            <p className="text-xl text-muted-foreground">
-              Now let's pick a specific restaurant!
-            </p>
-            <div className="flex items-center justify-center text-accent animate-pulse">
-              <ArrowRight className="w-6 h-6" />
-              <span className="ml-2">Restaurant wheel loading...</span>
+            <div className="glass p-4 rounded-xl space-y-3">
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <span>⭐ {restaurantWinner.restaurant.rating}</span>
+                <span>•</span>
+                <span>{'$'.repeat(restaurantWinner.restaurant.priceLevel)}</span>
+                <span>•</span>
+                <span>{restaurantWinner.restaurant.distance}</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {restaurantWinner.restaurant.address}
+              </p>
+              <div className="flex gap-2 justify-center">
+                {restaurantWinner.restaurant.phone && (
+                  <Button size="sm" variant="outline" asChild>
+                    <a href={`tel:${restaurantWinner.restaurant.phone}`}>
+                      <Phone className="w-4 h-4 mr-1" />
+                      Call
+                    </a>
+                  </Button>
+                )}
+                <Button size="sm" variant="outline" asChild>
+                  <a 
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(restaurantWinner.restaurant.name + ' ' + restaurantWinner.restaurant.address)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <MapPin className="w-4 h-4 mr-1" />
+                    Directions
+                  </a>
+                </Button>
+                {restaurantWinner.restaurant.website && (
+                  <Button size="sm" variant="outline" asChild>
+                    <a href={restaurantWinner.restaurant.website} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="w-4 h-4 mr-1" />
+                      Website
+                    </a>
+                  </Button>
+                )}
+              </div>
             </div>
           </motion.div>
         )}
@@ -302,23 +276,22 @@ export const Wheel: React.FC = () => {
       <div className="flex gap-4">
         <Button
           onClick={spinWheel}
-          disabled={isSpinning || isAnimating}
+          disabled={isRestaurantSpinning || isAnimating}
           size="lg"
           className={cn(
             "px-8 py-4 text-lg font-semibold rounded-xl",
-            "bg-gradient-to-r from-primary to-primary-glow",
-            "hover:from-primary-glow hover:to-primary",
+            "bg-gradient-to-r from-accent to-accent-glow",
+            "hover:from-accent-glow hover:to-accent",
             "transform transition-all duration-200",
             "hover:scale-105 hover:shadow-lg",
-            "disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled:transform-none"
+            "disabled:opacity-50 disabled:cursor-not-allowed"
           )}
         >
           <Sparkles className="w-5 h-5 mr-2" />
-          {isSpinning ? 'Spinning...' : 'Spin the Wheel!'}
+          {isRestaurantSpinning ? 'Spinning...' : 'Spin for Restaurant!'}
         </Button>
 
-        {winner && !isSpinning && (
+        {restaurantWinner && !isRestaurantSpinning && (
           <Button
             onClick={resetAndSpin}
             variant="outline"
@@ -330,19 +303,6 @@ export const Wheel: React.FC = () => {
           </Button>
         )}
       </div>
-
-      {/* Loading indicator */}
-      {isSpinning && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-center"
-        >
-          <div className="text-lg text-muted-foreground animate-pulse">
-            The wheel is spinning...
-          </div>
-        </motion.div>
-      )}
     </div>
   );
 };
