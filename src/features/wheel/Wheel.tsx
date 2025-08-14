@@ -25,7 +25,7 @@ export const Wheel: React.FC = () => {
   } = useWheelStore();
   
   const { coordinates, city, requestLocation } = useLocationStore();
-  const { fetchRestaurants, setSelectedCuisine, restaurants } = useRestaurantStore();
+  const { fetchRestaurants, setSelectedCuisine, restaurants, isLoading } = useRestaurantStore();
 
   const segmentAngle = 360 / segments.length;
 
@@ -87,6 +87,7 @@ export const Wheel: React.FC = () => {
   const spinWheel = useCallback(async () => {
     if (isSpinning || isAnimating) return;
 
+    // Request location if not available
     if (!coordinates && !city) {
       await requestLocation();
     }
@@ -115,6 +116,7 @@ export const Wheel: React.FC = () => {
       
       triggerConfetti();
       
+      // Fetch restaurants from API
       const location = coordinates || { city: city || 'New York' };
       fetchRestaurants(winningSegment.cuisine, location);
       
@@ -124,9 +126,9 @@ export const Wheel: React.FC = () => {
   }, [
     isSpinning, 
     isAnimating, 
-    rotation, 
-    coordinates, 
-    city, 
+    rotation,
+    coordinates,
+    city,
     requestLocation,
     setSpinning, 
     setWinner, 
@@ -270,7 +272,7 @@ export const Wheel: React.FC = () => {
 
       {/* Winner Banner */}
       <AnimatePresence>
-        {winner && !isSpinning && restaurants.length > 0 && (
+        {winner && !isSpinning && (
           <motion.div
             initial={{ scale: 0, opacity: 0, y: 50 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -288,12 +290,20 @@ export const Wheel: React.FC = () => {
               {winner.cuisine}!
             </h2>
             <p className="text-xl text-muted-foreground">
-              Now let's pick a specific restaurant!
+              {isLoading ? 'Finding restaurants...' : restaurants.length > 0 ? 'Now let\'s pick a restaurant!' : 'Ready for the restaurant wheel!'}
             </p>
-            <div className="flex items-center justify-center text-accent animate-pulse">
-              <ArrowRight className="w-6 h-6" />
-              <span className="ml-2">Restaurant wheel loading...</span>
-            </div>
+            {isLoading && (
+              <div className="flex items-center justify-center text-accent animate-pulse">
+                <ArrowRight className="w-6 h-6" />
+                <span className="ml-2">Loading restaurants from API...</span>
+              </div>
+            )}
+            {restaurants.length > 0 && !isLoading && (
+              <div className="flex items-center justify-center text-accent animate-pulse">
+                <ArrowRight className="w-6 h-6" />
+                <span className="ml-2">Restaurant wheel ready!</span>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

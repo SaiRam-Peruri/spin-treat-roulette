@@ -9,8 +9,8 @@ const Index = () => {
   const features = [
     {
       icon: Sparkles,
-      title: 'Premium Spinning Wheel',
-      description: 'Beautiful animations with realistic physics and confetti celebrations'
+      title: 'Two-Wheel System',
+      description: 'First wheel picks cuisine, second wheel picks specific restaurants'
     },
     {
       icon: MapPin,
@@ -64,7 +64,7 @@ const Index = () => {
               
               <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
                 Can't decide where to eat? Let our beautiful spinning wheel choose for you! 
-                Discover amazing restaurants near you with just a spin.
+                Discover amazing restaurants near you with just two spins.
               </p>
             </motion.div>
 

@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Settings, History, MapPin, RotateCcw, ArrowLeft } from 'lucide-react';
+import { Settings, History, ArrowLeft, RotateCcw, MapPin, Home } from 'lucide-react';
 import { Wheel } from '@/features/wheel/Wheel';
 import { RestaurantWheel } from '@/features/wheel/RestaurantWheel';
 import { LocationPrompt } from '@/features/location/LocationPrompt';
@@ -14,6 +15,7 @@ import { useRestaurantStore } from '@/store/restaurantStore';
 import { cn } from '@/lib/utils';
 
 export const RoulettePage: React.FC = () => {
+  const navigate = useNavigate();
   const [showLocationPrompt, setShowLocationPrompt] = useState(false);
   
   const { 
@@ -22,11 +24,50 @@ export const RoulettePage: React.FC = () => {
     showRestaurantWheel,
     restaurantWinner,
     setShowRestaurantWheel,
-    setRestaurantSegments
+    setRestaurantSegments,
+    resetWheel,
+    resetRestaurantWheel
   } = useWheelStore();
-  
+
   const { coordinates, city, hasPermission } = useLocationStore();
-  const { restaurants, selectedCuisine } = useRestaurantStore();
+  const { restaurants, selectedCuisine, isLoading, clearRestaurants } = useRestaurantStore();
+
+  // URL parameter handling for state persistence
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const step = urlParams.get('step');
+    const cuisine = urlParams.get('cuisine');
+    
+    // Only auto-fetch restaurants if URL indicates we should be on restaurant wheel
+    // and we don't already have restaurants data, and we're not currently loading
+    if (step === 'restaurants' && cuisine && !restaurants.length && !isLoading && !showRestaurantWheel) {
+      const location = coordinates || { city: city || 'New York' };
+      useRestaurantStore.getState().fetchRestaurants(cuisine, location);
+      useRestaurantStore.getState().setSelectedCuisine(cuisine);
+    }
+  }, [coordinates, city, restaurants.length, isLoading, showRestaurantWheel]);
+
+  // Update URL when state changes (but not when manually navigating back)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentStep = urlParams.get('step');
+    
+    if (showRestaurantWheel && selectedCuisine) {
+      // Only update URL if we're not already on the restaurant step
+      if (currentStep !== 'restaurants') {
+        urlParams.set('step', 'restaurants');
+        urlParams.set('cuisine', selectedCuisine);
+        const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
+        window.history.replaceState({}, '', newUrl);
+      }
+    } else if (winner && currentStep === 'restaurants') {
+      // We're going back to cuisine wheel, update URL
+      urlParams.set('step', 'cuisine');
+      urlParams.set('cuisine', winner.cuisine);
+      const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [showRestaurantWheel, selectedCuisine, winner]);
 
   // Show location prompt if no location is set
   useEffect(() => {
@@ -35,7 +76,7 @@ export const RoulettePage: React.FC = () => {
     }
   }, [coordinates, city, hasPermission]);
 
-  // Show restaurant wheel when we have restaurants
+  // Show restaurant wheel when we have restaurants from API
   useEffect(() => {
     if (winner && restaurants.length > 0 && !showRestaurantWheel) {
       setRestaurantSegments(restaurants.slice(0, 8)); // Limit to 8 restaurants for better visibility
@@ -48,21 +89,57 @@ export const RoulettePage: React.FC = () => {
   };
 
   const handleHistoryClick = (cuisine: string) => {
+    // Fetch restaurants for this cuisine again
     const location = coordinates || { city: city || 'New York' };
     useRestaurantStore.getState().fetchRestaurants(cuisine, location);
   };
 
   const handleBackToCuisine = () => {
+    // Reset restaurant wheel state
     setShowRestaurantWheel(false);
-    useWheelStore.getState().resetRestaurantWheel();
-    // Clear restaurant data to allow re-fetching
-    useRestaurantStore.getState().clearRestaurants();
+    resetRestaurantWheel();
+    clearRestaurants();
+    
+    // Update URL to reflect we're back on cuisine wheel
+    const urlParams = new URLSearchParams(window.location.search);
+    if (winner) {
+      urlParams.set('step', 'cuisine');
+      urlParams.set('cuisine', winner.cuisine);
+    } else {
+      urlParams.delete('step');
+      urlParams.delete('cuisine');
+    }
+    
+    const newUrl = urlParams.toString() 
+      ? `${window.location.pathname}?${urlParams.toString()}`
+      : window.location.pathname;
+    
+    window.history.replaceState({}, '', newUrl);
+  };
+
+  const handleBackToHome = () => {
+    // Optional: Clear all state when going back to home
+    const shouldClearState = window.confirm('Going back to home will reset your progress. Are you sure?');
+    
+    if (shouldClearState) {
+      resetWheel();
+      setShowRestaurantWheel(false);
+      resetRestaurantWheel();
+      clearRestaurants();
+      
+      // Clear URL parameters
+      window.history.replaceState({}, '', '/roulette');
+    }
+    
+    // Navigate to home page using React Router
+    navigate('/');
   };
 
   const handleResetAll = () => {
-    useWheelStore.getState().resetWheel();
-    useRestaurantStore.getState().clearRestaurants();
+    resetWheel();
     setShowRestaurantWheel(false);
+    resetRestaurantWheel();
+    clearRestaurants();
   };
 
   return (
@@ -71,6 +148,24 @@ export const RoulettePage: React.FC = () => {
       <header className="p-6 border-b border-white/10">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="space-y-1">
+            {/* Breadcrumb Navigation */}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+              <button 
+                onClick={() => navigate('/')}
+                className="hover:text-primary transition-colors"
+              >
+                Home
+              </button>
+              <span>/</span>
+              <span>Restaurant Roulette</span>
+              {showRestaurantWheel && (
+                <>
+                  <span>/</span>
+                  <span className="text-primary">{selectedCuisine} Restaurants</span>
+                </>
+              )}
+            </div>
+            
             <h1 className="text-3xl font-bold gradient-text">
               Restaurant Roulette
             </h1>
@@ -83,6 +178,17 @@ export const RoulettePage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-4">
+            {/* Back to Home Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-white/20 hover:bg-white/10"
+              onClick={handleBackToHome}
+            >
+              <Home className="w-4 h-4 mr-2" />
+              Home
+            </Button>
+
             {/* Location Indicator */}
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <MapPin className="w-4 h-4" />
@@ -130,7 +236,7 @@ export const RoulettePage: React.FC = () => {
 
         {/* Sidebar */}
         <div className="lg:w-80 border-l border-white/10 p-6 space-y-6">
-          {/* Current Winner */}
+          {/* Final Winner */}
           {restaurantWinner && showRestaurantWheel && (
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
@@ -169,10 +275,54 @@ export const RoulettePage: React.FC = () => {
                   {winner.cuisine}
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {showRestaurantWheel 
+                  {isLoading 
+                    ? "Loading restaurants from API..."
+                    : showRestaurantWheel 
                     ? "Now spin for a specific restaurant!"
+                    : restaurants.length > 0 
+                    ? "Restaurant wheel ready!"
                     : "Finding restaurants..."
                   }
+                </p>
+              </div>
+            </motion.div>
+          )}
+
+          <Separator className="opacity-20" />
+
+          {/* API Status */}
+          {isLoading && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="space-y-3"
+            >
+              <h3 className="text-lg font-semibold">🔄 Loading</h3>
+              <div className="glass p-4 rounded-xl space-y-2">
+                <div className="text-sm text-muted-foreground">
+                  Fetching {selectedCuisine} restaurants from API...
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-primary h-2 rounded-full animate-pulse w-2/3"></div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Restaurant Count */}
+          {restaurants.length > 0 && !isLoading && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="space-y-3"
+            >
+              <h3 className="text-lg font-semibold">📍 Found Restaurants</h3>
+              <div className="glass p-4 rounded-xl space-y-2">
+                <div className="text-lg font-bold text-primary">
+                  {restaurants.length} restaurants
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Found {restaurants.length} {selectedCuisine} restaurants via API
                 </p>
               </div>
             </motion.div>
@@ -243,12 +393,21 @@ export const RoulettePage: React.FC = () => {
                 <RotateCcw className="w-4 h-4 mr-2" />
                 Reset Everything
               </Button>
+
+              <Button
+                variant="outline"
+                className="w-full justify-start border-white/20 hover:bg-white/10"
+                onClick={handleBackToHome}
+              >
+                <Home className="w-4 h-4 mr-2" />
+                Back to Home
+              </Button>
             </div>
           </div>
         </div>
       </main>
 
-      {/* Modals */}
+      {/* Location Prompt Modal */}
       {showLocationPrompt && (
         <LocationPrompt onLocationSet={handleLocationSet} />
       )}

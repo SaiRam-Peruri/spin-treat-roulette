@@ -1,6 +1,8 @@
 
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { Restaurant } from './restaurantStore';
+import { CuisineOption } from '../features/cuisine/cuisineOptions';
 
 export interface WheelSegment {
   id: string;
@@ -31,6 +33,13 @@ export interface WheelState {
   showRestaurantWheel: boolean;
   restaurantSpinDuration: number;
   restaurantFinalRotation: number;
+
+  // Cuisine wheel state (improved second wheel)
+  cuisineWinner: CuisineOption | null;
+  isCuisineSpinning: boolean;
+  showCuisineWheel: boolean;
+  cuisineSpinDuration: number;
+  cuisineFinalRotation: number;
 }
 
 export interface WheelActions {
@@ -47,6 +56,13 @@ export interface WheelActions {
   setShowRestaurantWheel: (show: boolean) => void;
   setRestaurantSpin: (duration: number, rotation: number) => void;
   resetRestaurantWheel: () => void;
+
+  // Cuisine wheel actions (improved second wheel)
+  setCuisineWinner: (winner: CuisineOption | null) => void;
+  setCuisineSpinning: (spinning: boolean) => void;
+  setShowCuisineWheel: (show: boolean) => void;
+  setCuisineSpin: (duration: number, rotation: number) => void;
+  resetCuisineWheel: () => void;
 }
 
 export type WheelStore = WheelState & WheelActions;
@@ -71,72 +87,115 @@ const RESTAURANT_COLORS = [
   'segment-7', 'segment-8', 'segment-9', 'segment-10', 'segment-11', 'segment-12'
 ];
 
-export const useWheelStore = create<WheelStore>((set, get) => ({
-  segments: DEFAULT_SEGMENTS,
-  isSpinning: false,
-  winner: null,
-  spinHistory: [],
-  spinDuration: 0,
-  finalRotation: 0,
-  
-  // Restaurant wheel initial state
-  restaurantSegments: [],
-  isRestaurantSpinning: false,
-  restaurantWinner: null,
-  showRestaurantWheel: false,
-  restaurantSpinDuration: 0,
-  restaurantFinalRotation: 0,
+export const useWheelStore = create<WheelStore>()(
+  persist(
+    (set, get) => ({
+      segments: DEFAULT_SEGMENTS,
+      isSpinning: false,
+      winner: null,
+      spinHistory: [],
+      spinDuration: 0,
+      finalRotation: 0,
+      
+      // Restaurant wheel initial state
+      restaurantSegments: [],
+      isRestaurantSpinning: false,
+      restaurantWinner: null,
+      showRestaurantWheel: false,
+      restaurantSpinDuration: 0,
+      restaurantFinalRotation: 0,
 
-  setSpinning: (spinning) => set({ isSpinning: spinning }),
+      // Cuisine wheel initial state
+      cuisineWinner: null,
+      isCuisineSpinning: false,
+      showCuisineWheel: false,
+      cuisineSpinDuration: 0,
+      cuisineFinalRotation: 0,
 
-  setWinner: (winner) => set({ winner }),
+      setSpinning: (spinning) => set({ isSpinning: spinning }),
 
-  addToHistory: (segment) => set((state) => ({
-    spinHistory: [segment, ...state.spinHistory].slice(0, 5) // Keep last 5
-  })),
+      setWinner: (winner) => set({ winner }),
 
-  setSpin: (duration, rotation) => set({ 
-    spinDuration: duration, 
-    finalRotation: rotation 
-  }),
+      addToHistory: (segment) => set((state) => ({
+        spinHistory: [segment, ...state.spinHistory].slice(0, 5) // Keep last 5
+      })),
 
-  resetWheel: () => set({
-    isSpinning: false,
-    winner: null,
-    spinDuration: 0,
-    finalRotation: 0,
-    showRestaurantWheel: false,
-    restaurantWinner: null,
-    restaurantSegments: []
-  }),
+      setSpin: (duration, rotation) => set({ 
+        spinDuration: duration, 
+        finalRotation: rotation 
+      }),
 
-  // Restaurant wheel actions
-  setRestaurantSegments: (restaurants) => {
-    const segments: RestaurantWheelSegment[] = restaurants.map((restaurant, index) => ({
-      id: restaurant.id,
-      restaurant,
-      color: RESTAURANT_COLORS[index % RESTAURANT_COLORS.length],
-      angle: (360 / restaurants.length) * index
-    }));
-    set({ restaurantSegments: segments });
-  },
+      resetWheel: () => set({
+        isSpinning: false,
+        winner: null,
+        spinDuration: 0,
+        finalRotation: 0,
+        showRestaurantWheel: false,
+        restaurantWinner: null,
+        restaurantSegments: []
+      }),
 
-  setRestaurantSpinning: (spinning) => set({ isRestaurantSpinning: spinning }),
+      // Restaurant wheel actions
+      setRestaurantSegments: (restaurants) => {
+        const segments: RestaurantWheelSegment[] = restaurants.map((restaurant, index) => ({
+          id: restaurant.id,
+          restaurant,
+          color: RESTAURANT_COLORS[index % RESTAURANT_COLORS.length],
+          angle: (360 / restaurants.length) * index
+        }));
+        set({ restaurantSegments: segments });
+      },
 
-  setRestaurantWinner: (winner) => set({ restaurantWinner: winner }),
+      setRestaurantSpinning: (spinning) => set({ isRestaurantSpinning: spinning }),
 
-  setShowRestaurantWheel: (show) => set({ showRestaurantWheel: show }),
+      setRestaurantWinner: (winner) => set({ restaurantWinner: winner }),
 
-  setRestaurantSpin: (duration, rotation) => set({ 
-    restaurantSpinDuration: duration, 
-    restaurantFinalRotation: rotation 
-  }),
+      setShowRestaurantWheel: (show) => set({ showRestaurantWheel: show }),
 
-  resetRestaurantWheel: () => set({
-    isRestaurantSpinning: false,
-    restaurantWinner: null,
-    restaurantSpinDuration: 0,
-    restaurantFinalRotation: 0,
-    restaurantSegments: []
-  })
-}));
+      setRestaurantSpin: (duration, rotation) => set({ 
+        restaurantSpinDuration: duration, 
+        restaurantFinalRotation: rotation 
+      }),
+
+      resetRestaurantWheel: () => set({
+        isRestaurantSpinning: false,
+        restaurantWinner: null,
+        restaurantSpinDuration: 0,
+        restaurantFinalRotation: 0,
+        restaurantSegments: [],
+        showRestaurantWheel: false
+      }),
+
+      // Cuisine wheel actions
+      setCuisineWinner: (winner) => set({ cuisineWinner: winner }),
+
+      setCuisineSpinning: (spinning) => set({ isCuisineSpinning: spinning }),
+
+      setShowCuisineWheel: (show) => set({ showCuisineWheel: show }),
+
+      setCuisineSpin: (duration, rotation) => set({ 
+        cuisineSpinDuration: duration, 
+        cuisineFinalRotation: rotation 
+      }),
+
+      resetCuisineWheel: () => set({
+        isCuisineSpinning: false,
+        cuisineWinner: null,
+        cuisineSpinDuration: 0,
+        cuisineFinalRotation: 0
+      })
+    }),
+    {
+      name: 'wheel-storage', // unique name for localStorage
+      partialize: (state) => ({
+        winner: state.winner,
+        spinHistory: state.spinHistory,
+        showRestaurantWheel: state.showRestaurantWheel,
+        restaurantSegments: state.restaurantSegments,
+        restaurantWinner: state.restaurantWinner,
+        finalRotation: state.finalRotation,
+        restaurantFinalRotation: state.restaurantFinalRotation,
+      }),
+    }
+  )
+);

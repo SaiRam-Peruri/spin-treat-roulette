@@ -239,9 +239,9 @@ This project is licensed under the MIT License.
 - Clear browser cache and cookies
 
 ### Getting Help
-- Check the [Issues](https://github.com/your-repo/issues) page
 - Review the console logs for error details
 - Ensure all dependencies are properly installed
+- Check that API keys are properly configured
 
 ---
 
