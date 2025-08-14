@@ -26,6 +26,7 @@ export default {
 				foreground: 'hsl(var(--foreground))',
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
+					glow: 'hsl(var(--primary-glow))',
 					foreground: 'hsl(var(--primary-foreground))'
 				},
 				secondary: {
@@ -42,6 +43,7 @@ export default {
 				},
 				accent: {
 					DEFAULT: 'hsl(var(--accent))',
+					glow: 'hsl(var(--accent-glow))',
 					foreground: 'hsl(var(--accent-foreground))'
 				},
 				popover: {
@@ -61,6 +63,20 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				segment: {
+					1: 'hsl(var(--segment-1))',
+					2: 'hsl(var(--segment-2))',
+					3: 'hsl(var(--segment-3))',
+					4: 'hsl(var(--segment-4))',
+					5: 'hsl(var(--segment-5))',
+					6: 'hsl(var(--segment-6))',
+					7: 'hsl(var(--segment-7))',
+					8: 'hsl(var(--segment-8))',
+					9: 'hsl(var(--segment-9))',
+					10: 'hsl(var(--segment-10))',
+					11: 'hsl(var(--segment-11))',
+					12: 'hsl(var(--segment-12))'
 				}
 			},
 			borderRadius: {
