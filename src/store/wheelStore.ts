@@ -137,7 +137,6 @@ export const useWheelStore = create<WheelStore>((set, get) => ({
     restaurantWinner: null,
     restaurantSpinDuration: 0,
     restaurantFinalRotation: 0,
-    showRestaurantWheel: false,
     restaurantSegments: []
   })
 }));

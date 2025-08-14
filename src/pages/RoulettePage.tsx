@@ -55,6 +55,8 @@ export const RoulettePage: React.FC = () => {
   const handleBackToCuisine = () => {
     setShowRestaurantWheel(false);
     useWheelStore.getState().resetRestaurantWheel();
+    // Clear restaurant data to allow re-fetching
+    useRestaurantStore.getState().clearRestaurants();
   };
 
   const handleResetAll = () => {

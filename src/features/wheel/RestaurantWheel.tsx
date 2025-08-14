@@ -161,7 +161,7 @@ export const RestaurantWheel: React.FC = () => {
                 <g key={segment.id}>
                   <motion.path
                     d={pathData}
-                    fill={`hsl(var(--${segment.color}))`}
+                    className={`fill-[hsl(var(--${segment.color}))]`}
                     stroke="rgba(255, 255, 255, 0.3)"
                     strokeWidth="2"
                     animate={restaurantWinner?.id === segment.id ? {
