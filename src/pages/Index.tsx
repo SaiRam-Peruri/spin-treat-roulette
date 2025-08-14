@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Link } from 'react-router-dom';
 import { Sparkles, Utensils, MapPin, Star, ArrowRight, Zap } from 'lucide-react';
 
 const Index = () => {
@@ -75,16 +74,15 @@ const Index = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
-              <Link to="/roulette">
-                <Button
-                  size="lg"
-                  className="px-8 py-6 text-xl font-semibold rounded-2xl bg-gradient-to-r from-primary to-primary-glow hover:from-primary-glow hover:to-primary transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
-                >
-                  <Sparkles className="w-6 h-6 mr-3" />
-                  Start Spinning
-                  <ArrowRight className="w-6 h-6 ml-3" />
-                </Button>
-              </Link>
+              <Button
+                size="lg"
+                className="px-8 py-6 text-xl font-semibold rounded-2xl bg-gradient-to-r from-primary to-primary-glow hover:from-primary-glow hover:to-primary transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
+                onClick={() => window.location.href = '/roulette'}
+              >
+                <Sparkles className="w-6 h-6 mr-3" />
+                Start Spinning
+                <ArrowRight className="w-6 h-6 ml-3" />
+              </Button>
             </motion.div>
           </div>
         </div>
@@ -177,16 +175,15 @@ const Index = () => {
             <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
               Join thousands of food lovers who've found their perfect restaurant with our premium roulette experience.
             </p>
-            <Link to="/roulette">
-              <Button
-                size="lg"
-                className="px-10 py-6 text-xl font-semibold rounded-2xl bg-gradient-to-r from-accent to-accent-glow text-accent-foreground hover:from-accent-glow hover:to-accent transform hover:scale-105 transition-all duration-200"
-              >
-                <Utensils className="w-6 h-6 mr-3" />
-                Let's Eat!
-                <ArrowRight className="w-6 h-6 ml-3" />
-              </Button>
-            </Link>
+            <Button
+              size="lg"
+              className="px-10 py-6 text-xl font-semibold rounded-2xl bg-gradient-to-r from-accent to-accent-glow text-accent-foreground hover:from-accent-glow hover:to-accent transform hover:scale-105 transition-all duration-200"
+              onClick={() => window.location.href = '/roulette'}
+            >
+              <Utensils className="w-6 h-6 mr-3" />
+              Let's Eat!
+              <ArrowRight className="w-6 h-6 ml-3" />
+            </Button>
           </motion.div>
         </div>
       </section>
